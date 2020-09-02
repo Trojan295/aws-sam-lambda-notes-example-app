@@ -1,0 +1,148 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  notes
+  
+  Sample SAM Template for notes
+
+Globals:
+  Function:
+    Timeout: 30
+
+Parameters: 
+  CognitoUserPoolName: 
+    Type: String
+    Default: NotesUserPool
+  CognitoUserPoolClientName:
+    Type: String
+    Default: NotesBackend
+  DynamoDBTableName:
+    Type: String
+    Default: Notes
+
+Resources:
+  NotesTable:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+        - AttributeName: NoteID
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST 
+      KeySchema:
+        - AttributeName: NoteID
+          KeyType: HASH
+      TableName: !Ref DynamoDBTableName
+
+  FrontendApp:
+    Type: AWS::Amplify::App
+    Properties: 
+      Name: NotesFrontend
+
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Ref CognitoUserPoolName
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+      UsernameAttributes:
+        - email
+      Schema:
+        - AttributeDataType: String
+          Name: email
+          Required: false
+  
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      ClientName: !Ref CognitoUserPoolClientName
+      GenerateSecret: false
+      AllowedOAuthFlows:
+        - implicit
+      AllowedOAuthScopes:
+        - openid
+      CallbackURLs:
+        - !Sub
+          - https://${Domain}
+          - Domain: !GetAtt FrontendApp.DefaultDomain
+
+  NotesApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      TracingEnabled: true
+      Cors: "'*'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt CognitoUserPool.Arn
+
+  AddNote:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: notes/handlers/addNote
+      Handler: main
+      Runtime: go1.x
+      Tracing: Active
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref NotesApi
+            Path: /notes
+            Method: POST
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref NotesTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref NotesTable
+
+  GetNotes:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: notes/handlers/getNotes
+      Handler: main
+      Runtime: go1.x
+      Tracing: Active
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref NotesApi
+            Path: /notes
+            Method: GET
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref NotesTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref NotesTable
+
+  RemoveNote:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: notes/handlers/removeNote
+      Handler: main
+      Runtime: go1.x
+      Tracing: Active
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref NotesApi
+            Path: /notes/{NoteID}
+            Method: DELETE
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref NotesTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref NotesTable
+
+Outputs:
+  NotesAPI:
+    Description: "API Gateway endpoint URL for Prod environment"
+    Value: !Sub "https://${NotesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
