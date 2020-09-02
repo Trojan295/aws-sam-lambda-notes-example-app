@@ -12,9 +12,6 @@
 </template>
 
 <script>
-import {CognitoAuth} from 'amazon-cognito-auth-js'
-import jwt from 'jsonwebtoken'
-
 import NotesGrid from './components/NotesGrid.vue'
 import AddNote from './components/AddNote.vue'
 
