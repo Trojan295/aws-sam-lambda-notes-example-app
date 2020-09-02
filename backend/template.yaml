@@ -10,12 +10,6 @@ Globals:
     Timeout: 30
 
 Parameters: 
-  CognitoUserPoolName: 
-    Type: String
-    Default: NotesUserPool
-  CognitoUserPoolClientName:
-    Type: String
-    Default: NotesBackend
   DynamoDBTableName:
     Type: String
     Default: Notes
@@ -39,45 +33,12 @@ Resources:
       Name: NotesFrontend
       Repository: https://github.com/Trojan295/sam-notes
 
-  CognitoUserPool:
-    Type: AWS::Cognito::UserPool
-    Properties:
-      UserPoolName: !Ref CognitoUserPoolName
-      Policies:
-        PasswordPolicy:
-          MinimumLength: 8
-      UsernameAttributes:
-        - email
-      Schema:
-        - AttributeDataType: String
-          Name: email
-          Required: false
-  
-  CognitoUserPoolClient:
-    Type: AWS::Cognito::UserPoolClient
-    Properties:
-      UserPoolId: !Ref CognitoUserPool
-      ClientName: !Ref CognitoUserPoolClientName
-      GenerateSecret: false
-      AllowedOAuthFlows:
-        - implicit
-      AllowedOAuthScopes:
-        - openid
-      CallbackURLs:
-        - !Sub
-          - https://${Domain}
-          - Domain: !GetAtt FrontendApp.DefaultDomain
-
   NotesApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Prod
       TracingEnabled: true
       Cors: "'*'"
-      Auth:
-        Authorizers:
-          CognitoAuthorizer:
-            UserPoolArn: !GetAtt CognitoUserPool.Arn
 
   AddNote:
     Type: AWS::Serverless::Function
@@ -90,8 +51,6 @@ Resources:
         CatchAll:
           Type: Api
           Properties:
-            Auth: 
-              Authorizer: CognitoAuthorizer
             RestApiId: !Ref NotesApi
             Path: /notes
             Method: POST
@@ -113,11 +72,12 @@ Resources:
         CatchAll:
           Type: Api
           Properties:
-            Auth: 
-              Authorizer: CognitoAuthorizer
             RestApiId: !Ref NotesApi
             Path: /notes
             Method: GET
+      AutoPublishAlias: live
+      DeploymentPreference:
+        Type: Canary10Percent5Minutes
       Environment:
         Variables:
           DYNAMODB_TABLE: !Ref NotesTable
@@ -136,8 +96,6 @@ Resources:
         CatchAll:
           Type: Api
           Properties:
-            Auth: 
-              Authorizer: CognitoAuthorizer
             RestApiId: !Ref NotesApi
             Path: /notes/{NoteID}
             Method: DELETE

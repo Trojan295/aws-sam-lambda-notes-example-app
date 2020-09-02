@@ -31,33 +31,6 @@ export default {
     AddNote,
   },
 
-  mounted() {
-    var authData = {
-        ClientId : '33ji9dogm7druegp6b0qk62q7l',
-        UserPoolId : 'eu-west-1_lZ3k4mvWB',
-        AppWebDomain : 'notes-sam.auth.eu-west-1.amazoncognito.com',
-        TokenScopesArray : ['openid'],
-        RedirectUriSignIn : 'https://master.d3ce19lgs3htz.amplifyapp.com',
-        RedirectUriSignOut : 'https://master.d3ce19lgs3htz.amplifyapp.com',
-        AdvancedSecurityDataCollectionFlag : false,
-    };
-    var auth = new CognitoAuth(authData);
-
-    const comp = this;
-    auth.userhandler = {
-        onSuccess: function(result) {
-          comp.$store.commit('setAccessToken', result.idToken.jwtToken)
-        },
-        onFailure: function(err) {
-            alert("Auth error: " + err);
-        }
-    };
-
-    var curUrl = window.location.href;
-    auth.parseCognitoWebResponse(curUrl);
-    auth.getSession();
-  },
-
   computed: {
     username() {
       const payload = jwt.decode(this.$store.state.accessToken)

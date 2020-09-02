@@ -11,16 +11,10 @@ const apiBaseURL = 'https://ss8rdg6nid.execute-api.eu-west-1.amazonaws.com/Prod'
 Vue.use(Vuex)
 const store = new Vuex.Store({
   state: {
-    accessToken: null,
     notes: [],
   },
 
   mutations: {
-    setAccessToken (state, token) {
-      axios.defaults.headers.common['Authorization'] = `${token}`
-      state.accessToken = token
-    },
-
     setNotes(state, notes) {
       state.notes = notes
     }
