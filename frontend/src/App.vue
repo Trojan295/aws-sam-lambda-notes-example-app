@@ -37,8 +37,8 @@ export default {
         UserPoolId : 'eu-west-1_lZ3k4mvWB',
         AppWebDomain : 'notes-sam.auth.eu-west-1.amazoncognito.com',
         TokenScopesArray : ['openid'],
-        RedirectUriSignIn : 'http://localhost:8080',
-        RedirectUriSignOut : 'http://localhost:8080',
+        RedirectUriSignIn : 'https://master.d3ce19lgs3htz.amplifyapp.com',
+        RedirectUriSignOut : 'https://master.d3ce19lgs3htz.amplifyapp.com',
         AdvancedSecurityDataCollectionFlag : false,
     };
     var auth = new CognitoAuth(authData);
