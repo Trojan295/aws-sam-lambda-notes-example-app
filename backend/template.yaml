@@ -37,6 +37,7 @@ Resources:
     Type: AWS::Amplify::App
     Properties: 
       Name: NotesFrontend
+      Repository: https://github.com/Trojan295/sam-notes
 
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
@@ -74,7 +75,6 @@ Resources:
       TracingEnabled: true
       Cors: "'*'"
       Auth:
-        DefaultAuthorizer: CognitoAuthorizer
         Authorizers:
           CognitoAuthorizer:
             UserPoolArn: !GetAtt CognitoUserPool.Arn
@@ -90,6 +90,8 @@ Resources:
         CatchAll:
           Type: Api
           Properties:
+            Auth: 
+              Authorizer: CognitoAuthorizer
             RestApiId: !Ref NotesApi
             Path: /notes
             Method: POST
@@ -111,6 +113,8 @@ Resources:
         CatchAll:
           Type: Api
           Properties:
+            Auth: 
+              Authorizer: CognitoAuthorizer
             RestApiId: !Ref NotesApi
             Path: /notes
             Method: GET
@@ -132,6 +136,8 @@ Resources:
         CatchAll:
           Type: Api
           Properties:
+            Auth: 
+              Authorizer: CognitoAuthorizer
             RestApiId: !Ref NotesApi
             Path: /notes/{NoteID}
             Method: DELETE
