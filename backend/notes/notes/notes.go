@@ -8,11 +8,10 @@ type Note struct {
 	ID          uuid.UUID `json:"id"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
-	User        string    `json:"user"`
 }
 
 type NotesRepository interface {
-	GetNotesForUser(user string) ([]Note, error)
+	GetNotes() ([]Note, error)
 	AddNote(note *Note) error
 	RemoveNote(note *Note) error
 }

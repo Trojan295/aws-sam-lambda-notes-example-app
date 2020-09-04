@@ -10,6 +10,9 @@ Globals:
     Timeout: 30
 
 Parameters: 
+  ApiName:
+    Type: String
+    Default: notes-backend
   DynamoDBTableName:
     Type: String
     Default: Notes
@@ -17,8 +20,8 @@ Parameters:
 Resources:
   NotesTable:
     Type: AWS::DynamoDB::Table
-    Properties: 
-      AttributeDefinitions: 
+    Properties:
+      AttributeDefinitions:
         - AttributeName: NoteID
           AttributeType: S
       BillingMode: PAY_PER_REQUEST 
@@ -27,18 +30,33 @@ Resources:
           KeyType: HASH
       TableName: !Ref DynamoDBTableName
 
-  FrontendApp:
-    Type: AWS::Amplify::App
-    Properties: 
-      Name: NotesFrontend
-      Repository: https://github.com/Trojan295/sam-notes
-
   NotesApi:
     Type: AWS::Serverless::Api
     Properties:
+      Name: !Ref ApiName
       StageName: Prod
       TracingEnabled: true
       Cors: "'*'"
+
+  NotesApiServerErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: NotesApiServerErrorAlarm
+      EvaluationPeriods: 1
+      Metrics:
+      - Id: m1
+        MetricStat:
+          Metric:
+            Dimensions:
+              - Name: ApiName
+                Value: !Ref ApiName
+            MetricName: 5XXError
+            Namespace: AWS/ApiGateway
+          Period: !!int 60
+          Stat: Average
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0.05
+      TreatMissingData: notBreaching
 
   AddNote:
     Type: AWS::Serverless::Function
@@ -54,6 +72,11 @@ Resources:
             RestApiId: !Ref NotesApi
             Path: /notes
             Method: POST
+      AutoPublishAlias: live
+      DeploymentPreference:
+        Type: Canary10Percent5Minutes
+        Hooks:
+          PostTraffic: !Ref ValidateAPI
       Environment:
         Variables:
           DYNAMODB_TABLE: !Ref NotesTable
@@ -76,8 +99,14 @@ Resources:
             Path: /notes
             Method: GET
       AutoPublishAlias: live
+      ProvisionedConcurrencyConfig:
+        ProvisionedConcurrentExecutions: 20
       DeploymentPreference:
         Type: Canary10Percent5Minutes
+        Alarms:
+          - !Ref NotesApiServerErrorAlarm
+        Hooks:
+          PostTraffic: !Ref ValidateAPI
       Environment:
         Variables:
           DYNAMODB_TABLE: !Ref NotesTable
@@ -99,12 +128,49 @@ Resources:
             RestApiId: !Ref NotesApi
             Path: /notes/{NoteID}
             Method: DELETE
+      AutoPublishAlias: live
+      DeploymentPreference:
+        Type: Canary10Percent5Minutes
+        Hooks:
+          PostTraffic: !Ref ValidateAPI
       Environment:
         Variables:
           DYNAMODB_TABLE: !Ref NotesTable
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref NotesTable
+
+  ValidateAPI:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CodeDeployHook_ValidateAPI
+      CodeUri: notes/handlers/validateApi
+      Handler: main
+      Runtime: go1.x
+      Tracing: Active
+      DeploymentPreference:
+        Enabled: False
+      Policies:
+        - CloudFormationDescribeStacksPolicy: {}
+        - Version: '2012-10-17' 
+          Statement:
+            - Effect: Allow
+              Action:
+                - codedeploy:PutLifecycleEventHookExecutionStatus 
+              Resource:
+                !Sub 'arn:aws:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:${ServerlessDeploymentApplication}/*'
+      Environment:
+        Variables:
+          CLOUDFORMATION_STACK_NAME: !Ref "AWS::StackName"
+
+  FrontendApp:
+    Type: AWS::Amplify::App
+    Properties: 
+      Name: NotesFrontend
+      EnvironmentVariables:
+        - Name: VUE_APP_API_BASE_URL
+          Value:
+            !Sub "https://${NotesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
 
 Outputs:
   NotesAPI:

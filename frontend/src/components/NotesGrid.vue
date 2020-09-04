@@ -1,7 +1,7 @@
 <template>
   <div>
     <h2>Notes</h2>
-     <table style="width:100%">
+     <table class="u-full-width">
        <thead>
           <tr>
             <th>Title</th>
@@ -14,7 +14,7 @@
             <td>{{ note.title }}</td>
             <td>{{ note.description }}</td>
             <td>
-              <button @click="removeNote(note.id)">Delete</button>
+              <button class="danger" @click="removeNote(note.id)">Delete</button>
             </td>
           </tr>
        </tbody>
@@ -22,13 +22,35 @@
   </div>
 </template>
 
+<style lang="css" scoped>
+.danger {
+  background: #ff5e5e;
+  color: white;
+}
+
+</style>
+
 <script>
+
 export default {
   name: 'NotesGrid',
+
+  data() {
+    return {
+      intervalPtr: undefined,
+    }
+  },
+
   mounted() {
-    setTimeout(() => {
+    this.intervalPtr = setInterval(() => {
       this.$store.dispatch('fetchNotes')
-    }, 1000)
+    }, 2000)
+  },
+
+  beforeDestroy() {
+    if (this.intervalPtr !== undefined) {
+      clearInterval(this.intervalPtr)
+    }
   },
 
   computed: {

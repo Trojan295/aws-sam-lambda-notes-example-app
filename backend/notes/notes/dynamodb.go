@@ -3,8 +3,6 @@ package notes
 import (
 	"os"
 
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -16,7 +14,6 @@ type NoteItem struct {
 	NoteID      string
 	Title       string
 	Description string
-	User        string
 }
 
 type DynamoDBNotesRepository struct {
@@ -45,24 +42,11 @@ func (repo *DynamoDBNotesRepository) dynamoDBClient() *dynamodb.DynamoDB {
 	return dynamodb.New(repo.session)
 }
 
-func (repo *DynamoDBNotesRepository) GetNotesForUser(user string) ([]Note, error) {
-	filter := expression.Name("User").Equal(expression.Value(user))
-	expr, err := expression.NewBuilder().
-		WithFilter(filter).
-		Build()
-
-	if err != nil {
-		return []Note{}, err
-	}
-
+func (repo *DynamoDBNotesRepository) GetNotes() ([]Note, error) {
 	svc := repo.dynamoDBClient()
 
 	result, err := svc.Scan(&dynamodb.ScanInput{
-		TableName:                 aws.String(repo.TableName),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		FilterExpression:          expr.Filter(),
-		ProjectionExpression:      expr.Projection(),
+		TableName: aws.String(repo.TableName),
 	})
 	if err != nil {
 		return []Note{}, err
@@ -81,7 +65,6 @@ func (repo *DynamoDBNotesRepository) GetNotesForUser(user string) ([]Note, error
 			ID:          uuid.MustParse(item.NoteID),
 			Title:       item.Title,
 			Description: item.Description,
-			User:        item.User,
 		}
 		notes = append(notes, note)
 	}
@@ -96,7 +79,6 @@ func (repo *DynamoDBNotesRepository) AddNote(note *Note) error {
 		NoteID:      note.ID.String(),
 		Title:       note.Title,
 		Description: note.Description,
-		User:        note.User,
 	}
 
 	av, err := dynamodbattribute.MarshalMap(item)

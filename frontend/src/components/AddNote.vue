@@ -2,11 +2,10 @@
   <div>
     <h3>Add note:</h3>
     <form>
-      <label for="title">Title:</label><br>
-      <input v-model="title" type="text" id="title"><br>
-      <label for="description">Description</label><br>
-      <textarea v-model="description" type="text" id="description"/><br>
-
+      <label for="title">Title:</label>
+      <input class="u-full-width" v-model="title" type="text" id="title">
+      <label for="description">Description</label>
+      <textarea class="u-full-width" v-model="description" type="text" id="description"/>
       <button class="button-primary" v-on:click="addNote">Add</button>
     </form>
   </div>

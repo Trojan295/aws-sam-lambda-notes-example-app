@@ -14,9 +14,9 @@ var (
 )
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	notes, err := repo.GetNotesForUser("")
+	notes, err := repo.GetNotes()
 	if err != nil {
-		log.Printf("cannot get notes: %v", err)
+		log.Printf("cannot get all notes: %v", err)
 		return events.APIGatewayProxyResponse{StatusCode: 500}, nil
 	}
 
@@ -28,7 +28,10 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,
-		Body:       string(responseBody),
+		Headers: map[string]string{
+			"Version": "3",
+		},
+		Body: string(responseBody),
 	}, nil
 }
 

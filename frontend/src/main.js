@@ -6,7 +6,7 @@ import App from './App.vue'
 
 Vue.config.productionTip = false
 
-const apiBaseURL = 'https://ss8rdg6nid.execute-api.eu-west-1.amazonaws.com/Prod'
+const apiBaseURL = process.env.VUE_APP_API_BASE_URL
 
 Vue.use(Vuex)
 const store = new Vuex.Store({
