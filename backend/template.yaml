@@ -176,3 +176,6 @@ Outputs:
   NotesAPI:
     Description: "API Gateway endpoint URL for Prod environment"
     Value: !Sub "https://${NotesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  FrontendDomain:
+    Description: "Default domain of the Amplify frontend app"
+    Value: !GetAtt FrontendApp.DefaultDomain
