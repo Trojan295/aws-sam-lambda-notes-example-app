@@ -12,8 +12,11 @@ make deploy
 
 ## Lambda CodeDeploy deployments
 
+SAM uses Lambda aliases to perform canary and linear deployments. This allows to gradually shift traffic to the new version and rollback in case errors are appearing.
+
 This example shows two options how to perform checks on a new Lambda deployment and rollback it in case of failures:
-1. Rollback triggered by Cloudwatch Alarms in the `AllowTraffic` stage. The following setup triggers a rollback of the deployment in case there are more that 5% of 5xx errors for 1 minute on the API Gateway during traffic shifting
+
+1. Rollback triggered by Cloudwatch Alarms in the `AllowTraffic` stage. The following setup triggers a rollback of the deployment in case there are more that 5% of 5xx errors for 1 minute on the API Gateway during traffic shifting. Note that it means 5% of all Lambda calls and as SAM uses Lambda weighted alias you have to take it into account. For ex. if using `Canary10Percent5Minutes`, then 10% of the traffic is directed to the new Lambda, so with 5% error rate, 50% of the traffic to the new Lambda would need to error to trigger the rollback
 ```
   NotesApiServerErrorAlarm:
     Type: AWS::CloudWatch::Alarm
